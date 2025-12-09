@@ -11,22 +11,34 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ============================================
-# CONFIG – EDIT THESE
+# CONFIG – Set via environment variables or .env file
 # ============================================
 
-BASE_URL = "https://toast.sentry.io"
-ORG_SLUG = os.getenv("ORG", "toast")  # very likely "toast" for https://toast.sentry.io
+BASE_URL = os.getenv("SENTRY_BASE_URL")
+if not BASE_URL:
+    raise ValueError("SENTRY_BASE_URL not found in environment variables. Please check your .env file.")
+
+ORG_SLUG = os.getenv("ORG")
+if not ORG_SLUG:
+    raise ValueError("ORG not found in environment variables. Please check your .env file.")
 
 AUTH_TOKEN = os.getenv("SENTRY_TOKEN")
 if not AUTH_TOKEN:
     raise ValueError("SENTRY_TOKEN not found in environment variables. Please check your .env file.")
 
-# From your Discover URL:
-# https://toast.sentry.io/explore/discover/results/?...&project=4506112083820544&query=issue%3AADS-PLATFORM-SPA-J7&statsPeriod=6d&...
-PROJECT_ID = "4506112083820544"
-PROJECT_SLUG = "ads-platform-spa"  # Project slug (from project.name in event data)
-DISCOVER_QUERY = "issue:ADS-PLATFORM-SPA-J7"
-STATS_PERIOD = "10d"  # from statsPeriod=6d
+PROJECT_ID = os.getenv("PROJECT_ID")
+if not PROJECT_ID:
+    raise ValueError("PROJECT_ID not found in environment variables. Please check your .env file.")
+
+PROJECT_SLUG = os.getenv("PROJECT_SLUG")
+if not PROJECT_SLUG:
+    raise ValueError("PROJECT_SLUG not found in environment variables. Please check your .env file.")
+
+DISCOVER_QUERY = os.getenv("DISCOVER_QUERY")
+if not DISCOVER_QUERY:
+    raise ValueError("DISCOVER_QUERY not found in environment variables. Please check your .env file.")
+
+STATS_PERIOD = os.getenv("STATS_PERIOD", "10d")  # Default to 10d if not specified
 
 # Fields to retrieve from the API (required - Sentry needs to know which columns to return)
 # Common fields: id, timestamp, message, title, project, release, environment, user, tags, contexts, sdk, level, type
@@ -47,7 +59,7 @@ FIELDS = [
 ]
 
 # Safety cap so we don't accidentally slurp thousands
-MAX_EVENTS = 500
+MAX_EVENTS = int(os.getenv("MAX_EVENTS", "500"))
 
 # Output directory for individual event files
 EVENTS_DIR = Path("sentry_events")

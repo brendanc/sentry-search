@@ -9,10 +9,20 @@ Tools for fetching and searching Sentry event data.
 pip install -r requirements.txt
 ```
 
-2. Create a `.env` file with your Sentry token:
+2. Copy `.env.example` to `.env` and configure your Sentry settings:
+```bash
+cp .env.example .env
+```
+
+3. Edit `.env` with your Sentry configuration:
 ```
 SENTRY_TOKEN=your_token_here
-ORG=toast
+SENTRY_BASE_URL=https://your-org.sentry.io
+ORG=your-org-slug
+PROJECT_ID=your-project-id
+PROJECT_SLUG=your-project-slug
+DISCOVER_QUERY=issue:YOUR-ISSUE-ID
+STATS_PERIOD=10d
 ```
 
 ## Usage
@@ -30,51 +40,53 @@ This will:
 - Save each event to `sentry_events/{event_id}.json`
 - Skip events that have already been fetched (caching)
 
-**Configuration**: Edit the config section at the top of `sentry-search.py`:
+**Configuration**: All configuration is done via environment variables in your `.env` file:
+- `SENTRY_BASE_URL`: Your Sentry instance URL (e.g., `https://your-org.sentry.io`)
+- `ORG`: Your organization slug
 - `PROJECT_ID`: Your Sentry project ID
 - `PROJECT_SLUG`: Your project slug
-- `DISCOVER_QUERY`: The query to search for (e.g., `issue:ADS-PLATFORM-SPA-J7`)
-- `STATS_PERIOD`: Time period (e.g., `6d`, `30d`)
-- `MAX_EVENTS`: Safety limit for number of events to fetch
+- `DISCOVER_QUERY`: The query to search for (e.g., `issue:YOUR-ISSUE-ID`)
+- `STATS_PERIOD`: Time period (e.g., `6d`, `30d`, default: `10d`)
+- `MAX_EVENTS`: Safety limit for number of events to fetch (default: `500`)
 
 ### 2. Search Custom Props
 
 Search through the saved event JSON files for Custom Prop values.
 
-**Configuration**: Edit the config section at the top of `search-events.py`:
-- `PROP_PATH`: Dot-notation path to Custom Prop (e.g., `"restaurantInfo.restaurantSetGuid"`)
-- `VALUE_FILTER`: Optional value to filter by (set to `None` to disable filtering)
-- `CASE_SENSITIVE`: Whether value filtering is case sensitive
+**Configuration**: You can set defaults via environment variables or command line arguments:
+- `PROP_PATH`: Dot-notation path to Custom Prop (e.g., `"userInfo.userId"`)
+- `VALUE_FILTER`: Optional value to filter by (set to empty to disable filtering)
+- `CASE_SENSITIVE`: Whether value filtering is case sensitive (`true` or `false`)
 - `OUTPUT_FORMAT`: Output format (`"table"`, `"json"`, `"csv"`, or `"values"`)
 
-**Run with config values:**
+**Run with command line arguments:**
 ```bash
-# Uses values from config section
-python3 search-events.py
+# Required: prop_path must be provided
+python3 search-events.py userInfo.userId
 ```
 
-**Override config via command line:**
+**Command line options:**
 ```bash
-# Override prop path
-python3 search-events.py restaurantInfo.restaurantName
+# Basic search (prop_path is required)
+python3 search-events.py userInfo.userName
 
-# Override value filter
-python3 search-events.py --value "some-value"
+# Filter by value
+python3 search-events.py userInfo.userId --value "some-value"
 
-# Override output format
-python3 search-events.py --format json
+# Output as JSON
+python3 search-events.py userInfo.userId --format json
 
 # Case-insensitive search
-python3 search-events.py --case-insensitive
+python3 search-events.py userInfo.userName --value "john" --case-insensitive
 
-# Combine multiple overrides
-python3 search-events.py restaurantInfo.restaurantName --value "jack" --case-insensitive --format csv
+# Combine multiple options
+python3 search-events.py userInfo.userName --value "john" --case-insensitive --format csv
 ```
 
 **Custom Prop Path Format:**
 - Use dot notation to navigate nested properties
 - Paths start from `contexts["Custom props"]`
-- Example: `restaurantInfo.restaurantSetGuid` searches `contexts["Custom props"]["restaurantInfo"]["restaurantSetGuid"]`
+- Example: `userInfo.userId` searches `contexts["Custom props"]["userInfo"]["userId"]`
 
 ## Workflow
 

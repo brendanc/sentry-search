@@ -3,25 +3,28 @@
 Search tool for Sentry event JSON files.
 
 Searches through Custom Props in event JSON files using dot notation paths.
-Example: search for "restaurantInfo.restaurantSetGuid"
+Example: search for "userInfo.userId"
 """
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # ============================================
-# CONFIG – EDIT THESE
+# CONFIG – EDIT THESE (or override via command line)
 # ============================================
 
-# Dot-notation path to Custom Prop (e.g., "restaurantInfo.restaurantSetGuid")
-PROP_PATH = "restaurantInfo.restaurantSetGuid"
+# Dot-notation path to Custom Prop (e.g., "userInfo.userId")
+# Override via command line argument or set in environment
+PROP_PATH = os.getenv("PROP_PATH", "")
 
 # Optional: Filter results by value (substring match). Set to None to disable filtering.
-VALUE_FILTER = "d7afbf17-30ce-4317-8d0d-df94236fe16c"
+# Override via command line argument or set in environment
+VALUE_FILTER = os.getenv("VALUE_FILTER")  # None if not set
 
 # Case-sensitive value filtering
-CASE_SENSITIVE = True
+CASE_SENSITIVE = os.getenv("CASE_SENSITIVE", "true").lower() == "true"
 
 # Output format: "table", "json", "csv", or "values"
 OUTPUT_FORMAT = "table"
@@ -36,7 +39,7 @@ def get_nested_value(data: Dict[str, Any], path: str) -> Any:
     
     Args:
         data: The dictionary to search
-        path: Dot-notation path (e.g., "restaurantInfo.restaurantSetGuid")
+        path: Dot-notation path (e.g., "userInfo.userId")
     
     Returns:
         The value at the path, or None if not found
@@ -67,7 +70,7 @@ def search_custom_props(
     
     Args:
         events_dir: Directory containing event JSON files
-        prop_path: Dot-notation path to the Custom Prop (e.g., "restaurantInfo.restaurantSetGuid")
+        prop_path: Dot-notation path to the Custom Prop (e.g., "userInfo.userId")
         value_filter: Optional value to filter by (exact match or substring)
         case_sensitive: Whether value filtering is case sensitive
     
@@ -184,28 +187,28 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Search for restaurantSetGuid values
-  %(prog)s restaurantInfo.restaurantSetGuid
+  # Search for userId values
+  %(prog)s userInfo.userId
   
   # Search and filter by specific value
-  %(prog)s restaurantInfo.restaurantSetGuid --value "f525227d-17ee-452f-b0bc-ff9889f37d28"
+  %(prog)s userInfo.userId --value "12345"
   
   # Case-insensitive search
-  %(prog)s restaurantInfo.restaurantName --value "jack" --case-insensitive
+  %(prog)s userInfo.userName --value "john" --case-insensitive
   
   # Output as JSON
-  %(prog)s restaurantInfo.restaurantSetGuid --format json
+  %(prog)s userInfo.userId --format json
   
   # Output just unique values
-  %(prog)s restaurantInfo.restaurantSetGuid --format values
+  %(prog)s userInfo.userId --format values
         """
     )
     
     parser.add_argument(
         "prop_path",
         nargs="?",
-        default=PROP_PATH,
-        help=f"Dot-notation path to Custom Prop (default from config: {PROP_PATH})"
+        default=PROP_PATH if PROP_PATH else None,
+        help="Dot-notation path to Custom Prop (required if not set in config or env)"
     )
     
     parser.add_argument(
@@ -239,6 +242,9 @@ Examples:
     
     # Use config defaults if not provided via CLI
     prop_path = args.prop_path or PROP_PATH
+    if not prop_path:
+        parser.error("prop_path is required. Provide it as an argument or set PROP_PATH in environment/config.")
+    
     value_filter = args.value_filter if args.value_filter is not None else VALUE_FILTER
     case_sensitive = not args.case_insensitive if args.case_insensitive else CASE_SENSITIVE
     output_format = args.format or OUTPUT_FORMAT
